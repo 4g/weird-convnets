@@ -17,7 +17,6 @@ from tensorflow.keras.datasets import cifar10
 from tensorflow import keras
 import numpy as np
 from sklearn.preprocessing import normalize
-from tqdm import tqdm
 
 def accuracy(model, x_test, y_test):
     predictions = model.predict(x_test)
@@ -63,23 +62,21 @@ def get_model(n_classes, imshape):
                   metrics=['sparse_categorical_accuracy'])
     return model
 
-def test_imprinting():
+def test_imprinting(imprint_flag=False):
     ## Load model and train it
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     n_classes = len(np.unique(y_train))
     imshape = x_train.shape[1:]
-    
+
     model = get_model(n_classes, imshape)
-    for epoch in tqdm(range(10), desc="Running without imprinting .."):
-        model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=1, shuffle=True, verbose=0, batch_size=128)
-
-    print("Accuracy without imprinting:", accuracy(model, x_test, y_test))
-
-    for epoch in tqdm(range(10), desc="Running with imprinting .."):
-        model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=1, shuffle=True, verbose=0, batch_size=128)
+    model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=5, shuffle=True, verbose=0, batch_size=128)
+    if imprint_flag:
         imprint(model, x_train, y_train)
+    model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=5, shuffle=True, verbose=0, batch_size=128)
 
-    print("Accuracy with imprinting:", accuracy(model, x_test, y_test))
-
-
-test_imprinting()
+    print("Imprinting:{flag} Accuracy:{accuracy}".format(accuracy=accuracy(model, x_test, y_test),
+                                                                       flag=imprint_flag))
+if __name__ == '__main__':
+    import sys
+    flag = sys.argv[1].lower() == 'y'
+    test_imprinting(flag)
